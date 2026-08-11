@@ -1,404 +1,157 @@
+# G1 Server-Rack Manipulation (Isaac Sim)
+
+A Unitree **G1 (29 DoF) with BrainCo Revo2 hands** stands at a **42U server rack**
+holding a Dell PowerEdge R750 and services a hot-swap SSD: **press the release
+button → draw the drive out partway → reseat it → re-lock the clasp.** It runs in
+Isaac Sim 5.1 for **teleoperation, replay, and data generation**, and is the
+first of a family of scenes that reuse the same robot + rack + server + SSD core
+against swappable backgrounds.
+
+- **Task id:** `Isaac-ServerRack-G129-Brainco-Joint`
+- Built on the Unitree **`unitree_sim_isaaclab`** framework (upstream docs
+  preserved in [`README_upstream.md`](README_upstream.md)).
+
 <div align="center">
-  <h1 align="center"> unitree_sim_isaaclab </h1>
-  <h3 align="center"> Unitree Robotics </h3>
-  <p align="center">
-    <a> English </a> | <a href="README_zh-CN.md">中文</a> 
-  </p>
-  <a href="https://discord.gg/ZwcVwxv5rq" target="_blank"><img src="https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=Discord&logoColor=white" alt="Unitree LOGO"></a>
+  <img src="./tasks/g1_server_rack/preview/isaacsim51_brainco.png" width="560"/>
 </div>
 
-## Important Notes First
-- Please use the [officially recommended](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html) hardware resources for deployment
-- The simulator may take some time to load resources during its first startup, and the waiting time depends on hardware performance and network environment
-- After the simulator starts running, it will send/receive the same DDS topics as the real robot (Please note to distinguish between the simulator and real robot if there is a real robot running on the same network). For specific DDS usage, please refer to[G1 Control](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1) and [Dex3 Dexterous Hand Control](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
-- The weight files provided in this project are only for simulation environment testing
-- Currently, our project has only been tested on RTX 3080, RTX 3090, and RTX 4090 GPUs. For the RTX 50 series GPUs, please use Isaac Sim version 5.0.0
-- After the virtual scene starts up, please click PerspectiveCamera -> Cameras -> PerspectiveCamera to view the main view scene. The operation steps are shown below:
-<table align="center">
-    <tr>
-    <td align="center">
-        <img src="./img/mainview.png" width="300" alt="G1-gripper-cylinder"/>
-      <br/>
-      <code>Main View Finding Steps</code>
-    </td>
-    </tr>
-</table>
+---
 
-## 1、 📖 Introduction
+## Quick start — teleoperation
 
-This project is built on **Isaac Lab** to simulate **Unitree robots** in various tasks, facilitating data collection, playback, generation, and model validation. It can be used in conjunction with the [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) repository for dataset collection. The project adopts the same DDS communication protocol as the real robot to enhance code generality and ease of use.
+Everything below runs in the `unitree_sim_env` conda env (Isaac Sim 5.1 + torch);
+the CycloneDDS + `unitree_sdk2py` stack and IsaacLab 2.3.2 source are already
+installed (see [Environment](#environment)).
 
-Currently, the project employs Unitree G1/H1-2 robots equipped with different actuators, and provides simulation scenarios for multiple tasks. The task names and corresponding illustrations are summarized in the table below. Tasks that include `Wholebody` in their names enable mobile operations.
+### 1. Start the simulation (this machine)
+```bash
+conda activate unitree_sim_env          # or use its python directly
+cd /home/admin/isaac-sim/unitree_sim_isaaclab
+source tools/teleop_env.sh              # sets LD_PRELOAD / CycloneDDS / PYTHONPATH
 
-<table align="center">
-  <tr>
-    <th>G1-29dof-gripper</th>
-    <th>G1-29dof-dex3</th>
-    <th>G1-29dof-inspire</th>
-    <th>H1-2-inspire</th>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="./img/pickplace_clinder_g129_dex1.png" width="300" alt="G1-gripper-cylinder"/>
-      <br/>
-      <code>Isaac-PickPlace-Cylinder-G129-Dex1-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/pickplace_clinder_g129_dex3.png" width="300" alt="G1-dex3-cylinder"/>
-      <br/>
-      <code>Isaac-PickPlace-Cylinder-G129-Dex3-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-PickPlace-Cylinder-G129-Inspire-Joint.png" width="300" alt="G1-dex3-cylinder"/>
-      <br/>
-      <code>Isaac-PickPlace-Cylinder-G129-Inspire-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-PickPlace-Cylinder-H12-27dof-Inspire-Joint.png" width="300" alt="G1-gripper-redblock"/>
-      <br/>
-      <code>Isaac-PickPlace-Cylinder-H12-27dof-Inspire-Joint</code>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="./img/pickplace_redblock_g129_dex1.png" width="300" alt="G1-gripper-redblock"/>
-      <br/>
-      <code>Isaac-PickPlace-RedBlock-G129-Dex1-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/pickplace_redblock_g129_dex3.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-PickPlace-RedBlock-G129-Dex3-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-PickPlace-RedBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-PickPlace-RedBlock-G129-Inspire-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-PickPlace-RedBlock-H12-27dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-PickPlace-RedBlock-H12-27dof-Inspire-Joint</code>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="./img/stack_rgyblock_g129_dex1.png" width="300" alt="G1-gripper-redblock"/>
-      <br/>
-      <code>Isaac-Stack-RgyBlock-G129-Dex1-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/stack_rgyblock_g129_dex3.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-Stack-RgyBlock-G129-Dex3-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-Stack-RgyBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-Stack-RgyBlock-H12-27dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code> Isaac-Stack-RgyBlock-H12-27dof-Inspire-Joint</code>
-    </td>
-  </tr>
-    <tr>
-    <td align="center">
-      <img src="./img/Isaac-Move-Cylinder-G129-Dex1-Wholebody.png" width="300" alt="G1-gripper-redblock"/>
-      <br/>
-      <code>Isaac-Move-Cylinder-G129-Dex1-Wholebody</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-Move-Cylinder-G129-Dex3-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-Move-Cylinder-G129-Dex3-Wholebody</code>
-    </td>
-    <td align="center">
-      <img src="./img/Isaac-Move-Cylinder-G129-Inspire-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
-      <br/>
-      <code>Isaac-Move-Cylinder-G129-Inspire-Wholebody</code>
-    </td>
-  </tr>
-</table>
-
-## 2、⚙️ Environment Setup and Running
-
-This project requires Isaac Sim 4.5.0/Isaac Sim 5.x.0 and Isaac Lab. You can refer to the [official installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html)  or follow the steps below. The installation methods for Ubuntu 20.04 and Ubuntu 22.04 (and later versions) are different. Please choose the installation method based on your system version and GPU resources.
-
-### 2.1 Isaac Sim 4.5.0 Environment Installation
-
-The environment can be installed using one of the following two methods:
-- Use the `auto_setup_env.sh` script for automatic installation.
-
+python sim_main.py --device cpu --enable_cameras \
+  --task Isaac-ServerRack-G129-Brainco-Joint --robot_type g129 --enable_brainco_dds
 ```
-chmod +x auto_setup_env.sh
-bash auto_setup_env.sh 4.5 unitree_sim_env
-```
-- Follow the documentation below for installation.
+This loads the scene, starts the **image server** (streams the head + wrist
+cameras), and subscribes to robot/hand commands over **DDS domain 1**.
 
-Please refer to the <a href="doc/isaacsim4.5_install.md">Isaac Sim 4.5.0 Environment Installation Steps</a> for the setup.
+> `--device cpu` because torch in this env is the CPU build (the GPU still
+> renders). Don't pass `--enable_inspire_dds` — this robot uses the **BrainCo**
+> hand (`--enable_brainco_dds`).
 
-### 2.2 Isaac Sim 5.0.0/5.1.0 Environment Installation
+Leave this terminal running. It's ready when the Isaac Sim window shows the G1 at
+the rack and the console prints the DDS init lines.
 
-The environment can be installed using one of the following two methods:
-- Use the `auto_setup_env.sh` script for automatic installation.
+### 2. Start the teleop client + Pico
+Run your [`xr_teleoperate`](https://github.com/unitreerobotics/xr_teleoperate) on the
+machine driving the Pico (may be this same machine), configured to match the sim:
 
-```
-chmod +x auto_setup_env.sh
-bash auto_setup_env.sh 5.0 unitree_sim_env 
-or 
-bash auto_setup_env.sh 5.1 unitree_sim_env
-```
-- Follow the documentation below for installation.
+- **DDS domain 1** — `ChannelFactoryInitialize(1)` (must equal the sim's).
+- **image_server IP** = the sim machine — `127.0.0.1` if it's the same machine,
+  otherwise its LAN IP (**this machine: `172.16.134.177`**).
+- **robot** = G1, 29 DoF.
+- It serves an HTTPS/WebXR page using the TLS cert already at
+  `~/.config/xr_teleoperate/` (`cert.pem` / `key.pem`).
 
-Please refer to the <a href="doc/isaacsim5.0_install.md">Isaac Sim 5.0.0 Environment Installation Steps</a>， <a href="doc/isaacsim5.1_install.md">Isaac Sim 5.1.0 Environment Installation Steps</a> for the setup.
+On the **Pico**: open the client page in the headset browser
+(`https://<client-machine-ip>:<port>`), accept the certificate, and enter
+immersive/VR mode.
 
-**Recommended:** Use the `auto_setup_env.sh` script to automatically install the environment and download the required assets.
+### 3. Operate
+- The **head-camera** view appears in the headset.
+- Your **controllers/hands** drive the arm (IK → `rt/lowcmd`) and the BrainCo
+  fingers (→ `rt/brainco/cmd`). Do the task: press the SSD release button, draw
+  the drive out partway, reseat it, and re-lock the clasp.
 
-### 2.3 Build the Docker Environment (Using Ubuntu 22.04 / IsaacSim 5.1)
-
-#### 2.3.1 Build the Docker environment
-```shell
-sudo docker pull nvidia/cuda:12.2.0-runtime-ubuntu22.04
-cd unitree_sim_isaaclab
-sudo docker build \
-  --build-arg http_proxy=http://127.0.0.1:7890 \
-  --build-arg https_proxy=http://127.0.0.1:7890 \
-  -t unitree-sim:latest -f Dockerfile .
-
-# If you need to use a proxy, please fill in
-# --build-arg http_proxy=http://127.0.0.1:7890 --build-arg https_proxy=http://127.0.0.1:7890
+### 4. Reset between attempts
+Publish a reset on `rt/reset_pose/cmd` — from xr_teleoperate's reset control, or:
+```bash
+python send_commands_8bit.py    # gamepad; category 1 = reset the SSD, 2 = reset the whole scene
 ```
 
-#### 2.3.2 Enter the Docker environment
-
-```shell
-xhost +local:docker
-
-sudo docker run --gpus all -it --rm   --network host   -e NVIDIA_VISIBLE_DEVICES=all   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics,display   -e LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH   -e DISPLAY=$DISPLAY   -e VK_ICD_FILENAMES=/etc/vulkan/icd.d/nvidia_icd.json   -v /etc/vulkan/icd.d:/etc/vulkan/icd.d:ro   -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d:ro   -v /tmp/.X11-unix:/tmp/.X11-unix:rw   -v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets   unitree-sim /bin/bash
-
-# The option `-v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets` maps the `unitree_sim_isaaclab_usds` directory on the host machine to `isaacsim_assets` inside the Docker container, making it convenient to share data between the host and the container. Please modify it according to your own setup.
+### 5. Record demonstrations
+Live teleop demos are recorded by **`xr_teleoperate`** (into its own data dir). To
+replay them in the sim and augment (vary lighting/cameras for more visual data):
+```bash
+python sim_main.py --device cpu --enable_cameras \
+  --task Isaac-ServerRack-G129-Brainco-Joint --robot_type g129 --enable_brainco_dds \
+  --replay --file_path <xr_teleoperate_data_dir> --generate_data --generate_data_dir ./data_serverrack
 ```
 
-### 2.4 Run Program
+### BrainCo hand DDS contract (what the client must publish)
+Defined in [`dds/brainco_dds.py`](dds/brainco_dds.py). Topic **`rt/brainco/cmd`**,
+message `MotorCmds_`, **12 motors in radians** (`q`), left hand then right:
 
-#### 2.4.1 Asset Download
+| idx | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| joint | L thumb_meta | L thumb_prox | L index | L middle | L ring | L pinky | R thumb_meta | R thumb_prox | R index | R middle | R ring | R pinky |
 
-Use the following command to download the required asset files
+Only the **6 driven joints per hand** are sent; the 5 distal joints follow their
+proximal automatically (thumb ×1.0, fingers ×1.155). State is published back on
+`rt/brainco/state`.
 
-```
-sudo apt update
+> **Status:** the **sim side is fully wired and verified** (arm + BrainCo fingers,
+> including finger coupling). Live finger motion just needs `xr_teleoperate` to
+> publish to `rt/brainco/cmd` in the layout above. Until then, the **arm
+> teleoperates**; fingers hold their open pose.
 
-sudo apt install git-lfs
+---
 
-. fetch_assets.sh
-```
-
-#### 2.4.2 Teleoperation
-
-```
-python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_dex1_dds --robot_type g129
-```
-
-- `--task`: Task name, corresponding to the task names in the table above
-- `--enable_dex1_dds/--enable_dex3_dds`: Represent enabling DDS for two-finger gripper/three-finger dexterous hand respectively  
-- `--robot_type`: Robot type, currently has 29-DOF unitree g1 (g129),27-DoF H1-2
-- `--no_render`: Run without launching the Sim window and enable the WebRTC video stream. If running in a Docker environment, please add this parameter. You can use the Isaac Sim WebRTC Streaming Client to view the video feed.
-.
-
-**Note 1:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly. Please note that only tasks marked with `Wholebody` are mobile tasks and can control the robot's movement.
-
-**Note 2:** The Isaac Sim WebRTC Streaming Client is a tool provided by NVIDIA Isaac Sim for viewing the Sim window remotely. For installation and usage details, please refer to the 
-[official documentation](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/installation/manual_livestream_clients.html)
-
-#### 2.4.3 Data Replay
-
-```
-python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" 
-```
-- `--replay:` Specifies whether to perform data replay.
-
-- `--file_path:` Directory where the dataset is stored (please update this to your own dataset path).
-
-
-**Note:** The dataset format used here is consistent with the one recorded via teleoperation in [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) .
-
-**Note:** For task-discrete rewards, you can use the `get_step_reward_value` function to retrieve them.
-
-
-#### 2.4.4 Data Generation
-During data replay, by modifying lighting conditions and camera parameters and re-capturing image data, more diverse visual features can be generated for data augmentation, thereby improving the model’s generalization ability.
-```
-python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" --generate_data --generate_data_dir "./data2"
+## Just want to look at it (no VR)
+Opens the scene in the Isaac Sim GUI and gently waves the arm:
+```bash
+bash tools/run_server_rack_gui.sh          # add --still to hold the pose
 ```
 
-- `--generate_data:` Enables generation of new data.
+*(Replay/augmentation details: [`README_upstream.md`](README_upstream.md) §2.4.3–2.4.4.)*
 
-- `--generate_data_dir:` Directory to store the newly generated data.
+---
 
-- `--rerun_log:` Enables logging during data generation.
+## Environment
 
-- `--modify_light:` Enables modification of lighting conditions (you need to adjust the update_light function in main accordingly).
+Runs in the miniforge conda env **`unitree_sim_env`** (Python 3.11):
+- **Isaac Sim 5.1** (pip `isaacsim[all]`) + **torch 2.7.0** (CPU) — pin
+  `numpy==1.26.0` / `opencv-python==4.10.0.84` (the SDK/pinocchio try to pull
+  numpy≥2, which breaks Isaac Sim).
+- **IsaacLab 2.3.2** used via `PYTHONPATH` (source, not pip-installed).
+- **Unitree DDS**: `cyclonedds==0.10.2` (bindings built against
+  `/home/admin/isaac-sim/cyclonedds/install`) + editable `unitree_sdk2_python`.
+- **`pin` + `pin-pink`** (the framework's task registry imports all tasks; some need it).
 
-- `--modify_camera:` Enables modification of camera parameters (you need to adjust the batch_augment_cameras_by_name function in main accordingly).
+`source tools/teleop_env.sh` exports the `LD_PRELOAD` (libgomp), `CYCLONEDDS_HOME`,
+`LD_LIBRARY_PATH`, and `PYTHONPATH` these require. Full notes in the project memory
+and [`README_upstream.md`](README_upstream.md) (setup via `auto_setup_env.sh`).
 
-**Note:**
-If you wish to modify lighting or camera parameters, please tune and test the parameters carefully before performing large-scale data generation.
+---
 
+## What's in the task
 
-**Note:** If you are using the simulation together with `xr_teleoperate` for data collection, you need to modify the IP address of the `image_server` in `xr_teleoperate` to match the IP address where the simulation is running.
+| Piece | Where | Notes |
+|---|---|---|
+| Registered task | [`tasks/g1_tasks/server_rack_g1_29dof_brainco/`](tasks/g1_tasks/server_rack_g1_29dof_brainco/) | env cfg + `gym.register` + mdp ([its README](tasks/g1_tasks/server_rack_g1_29dof_brainco/README.md)) |
+| Scene core (swappable bg) | [`tasks/g1_server_rack/`](tasks/g1_server_rack/) | placements, environments, props ([its README](tasks/g1_server_rack/README.md)) |
+| Scene base | `tasks/common_scene/base_scene_g1_server_rack.py` | room + rack + server + SSDs + object + world cam |
+| BrainCo robot cfg | `robots/brainco.py` | Revo2 hand + finger coupling |
+| BrainCo hand DDS | `dds/brainco_dds.py` | `rt/brainco/{cmd,state}` |
+| Interactive SSD | `assets/objects/ssd_articulated/` | 5.1-native re-import (2 DOFs) via `tools/reimport_ssd_articulated_51.py` |
+| Baked backdrop | `assets/environments/office_server_rack.usd` | from `tools/bake_environment_usd.py --env office` |
 
+**4 cameras:** head D435 + left/right wrist (the 3 the recorder saves) + a fixed
+3rd-person world cam.
 
-## 3、Task Scene Construction
+**Swap the background** (future environments): add an `Environment` subclass in
+`tasks/g1_server_rack/environments.py`, re-bake, done — the robot/rack/server/SSD
+core is untouched.
 
-### 3.1 Code Structure
+---
 
-```
-unitree_sim_isaaclab/
-│
-├── action_provider                   [Action providers, provides interfaces for reading file actions, receiving DDS actions, policy-generated actions, etc. Currently mainly uses DDS-based action acquisition]
-│
-├── dds                               [DDS communication module, implements DDS communication for g1, gripper, and three-finger dexterous hand]
-│
-├── image_server                      [Image publishing service, uses ZMQ for image publishing]
-│
-├── layeredcontrol                    [Low-level control module, gets actions and sets them in virtual environment]
-│
-├── robots                            [Basic robot configurations]
-│
-├── tasks                             [Task-related files]
-│   ├── common_config
-│   │     ├── camera_configs.py       [Camera placement related configurations]
-│   │     ├── robot_configs.py        [Robot setup related configurations]
-│   │
-│   ├── common_event
-│   │      ├── event_manager.py       [Event registration management]  
-│   │
-│   ├── common_observations
-│   │      ├── camera_state.py        [Camera data acquisition]  
-│   │      ├── dex3_state.py          [Three-finger dexterous hand data acquisition]
-│   │      ├── g1_29dof_state.py      [Robot state data acquisition]
-│   │      ├── gripper_state.py       [Gripper data acquisition]
-│   │
-│   ├── common_scene                
-│   │      ├── base_scene_pickplace_cylindercfg.py         [Common scene for cylinder grasping task]  
-│   │      ├── base_scene_pickplace_redblock.py            [Common scene for red block grasping task] 
-│   │
-│   ├── common_termination                                 [Judgment of whether objects in different tasks exceed specified working range]
-│   │      ├── base_termination_pick_place_cylinder         
-│   │      ├── base_termination_pick_place_redblock 
-│   │
-│   ├── g1_tasks                                            [All g1-related tasks]
-│   │      ├── pick_place_cylinder_g1_29dof_dex1            [Cylinder grasping task]
-│   │      │     ├── mdp                                      
-│   │      │     │     ├── observations.py                  [Observation data]
-│   │      │     │     ├── terminations.py                  [Termination judgment conditions]
-│   │      │     ├── __init__.py                            [Task name registration]  
-│   │      │     ├── pickplace_cylinder_g1_29dof_dex1_joint_env_cfg.py           [Task-specific scene import and related class initialization]
-│   │      ├── ...
-│   │      ├── __init__.py                                  [Display all task names existing in g1]
-│   ├── utils                                               [Utility functions]
-├── tools                                                   [USD conversion and modification related tools]
-├── usd                                                     [USD model files]
-├── sim_main.py                                             [Main function] 
-├── reset_pose_test.py                                      [Test function for object position reset] 
-```
+## Known follow-ups
+- **`xr_teleoperate` → `rt/brainco/cmd`**: publish the 12-motor BrainCo command to
+  drive the fingers live (the sim side is ready).
+- **SSD grasp/latch physics** (button stiffness, seated retention, grasp friction)
+  are start values in `base_scene_g1_server_rack.py` — tune live during teleop.
 
-### 3.2 Task Scene Construction Steps
-If using existing robot configurations (G1-29dof-gripper, G1-29dof-dex3) to build new task scenes, just follow the steps below:
+---
 
-#### 3.2.1、Build Common Parts of Task Scene (i.e., scenes other than the robot)
-According to existing task configurations, add new task common scene configurations in the common_scene directory. You can refer to existing task common configuration files.
-#### 3.2.2 Termination or Object Reset Condition Judgment
-Add termination or object reset judgment conditions according to your scene needs in the common_termination directory
-#### 3.2.3 Add and Register Tasks
-Add new task directories in the g1_tasks directory and modify related files following existing tasks. Taking the pick_place_cylinder_g1_29dof_dex1 task as an example:
-
-- observations.py: Add corresponding observation functions, just import the corresponding files as needed
- ```
-
-# Copyright (c) 2025, Unitree Robotics Co., Ltd. All Rights Reserved.
-# License: Apache License, Version 2.0  
-from tasks.common_observations.g1_29dof_state import get_robot_boy_joint_states
-from tasks.common_observations.gripper_state import get_robot_gipper_joint_states
-from tasks.common_observations.camera_state import get_camera_image
-
-# ensure functions can be accessed by external modules
-__all__ = [
-    "get_robot_boy_joint_states",
-    "get_robot_gipper_joint_states", 
-    "get_camera_image"
-]
-
- ```
-- terminations.py: Add corresponding condition judgment functions, import corresponding files from common_termination
- ```
- from tasks.common_termination.base_termination_pick_place_cylinder import reset_object_estimate
-__all__ = [
-"reset_object_estimate"
-]
- ```
-
-- pick_place_cylinder_g1_29dof_dex1/```__init__.py ```
-
-Add ```__init__.py``` in the new task directory and add task name, as shown in the ```__init__.py``` under pick_place_cylinder_g1_29dof_dex1:
-
-```
-# Copyright (c) 2025, Unitree Robotics Co., Ltd. All Rights Reserved.
-# License: Apache License, Version 2.0  
-
-import gymnasium as gym
-
-from . import pickplace_cylinder_g1_29dof_dex1_joint_env_cfg
-
-
-gym.register(
-    id="Isaac-PickPlace-Cylinder-G129-Dex1-Joint",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    kwargs={
-        "env_cfg_entry_point": pickplace_cylinder_g1_29dof_dex1_joint_env_cfg.PickPlaceG129DEX1BaseFixEnvCfg,
-    },
-    disable_env_checker=True,
-)
-
-
-```
-- Write the environment configuration file corresponding to the task, such as pickplace_cylinder_g1_29dof_dex1_joint_env_cfg.py
-
-Import common scenes, set robot positions, and add camera configurations
-
-- Modify g1_tasks/```__init__.py```
-
-Add the new task configuration class to the ```__init__.py``` file in the g1_tasks directory as follows:
-
-```
-
-# Copyright (c) 2025, Unitree Robotics Co., Ltd. All Rights Reserved.
-# License: Apache License, Version 2.0  
-"""Unitree G1 robot task module
-contains various task implementations for the G1 robot, such as pick and place, motion control, etc.
-"""
-
-# use relative import
-from . import pick_place_cylinder_g1_29dof_dex3
-from . import pick_place_cylinder_g1_29dof_dex1
-from . import pick_place_redblock_g1_29dof_dex1
-from . import pick_place_redblock_g1_29dof_dex3
-# export all modules
-__all__ = ["pick_place_cylinder_g1_29dof_dex3", "pick_place_cylinder_g1_29dof_dex1", "pick_place_redblock_g1_29dof_dex1", "pick_place_redblock_g1_29dof_dex3"]
-
-```
-### 📋 TODO List
-
-- ⬜ Continue adding new task scenes
-- ⬜ Continue code optimization 
-
-## 🙏 Acknowledgement
-
-This code builds upon following open-source code-bases. Please visit the URLs to see the respective LICENSES:
-
-1. https://github.com/isaac-sim/IsaacLab
-2. https://github.com/isaac-sim/IsaacSim
-3. https://github.com/zeromq/pyzmq
-4. https://github.com/unitreerobotics/unitree_sdk2_python
+*Upstream framework (all tasks, Docker, full setup, data pipeline): see
+[`README_upstream.md`](README_upstream.md).*
