@@ -204,3 +204,29 @@ class CameraPresets:
             pos_offset=(-0.04012, 0.07441 ,0.15711),
             rot_offset=(0.00539,0.86024,0.0424, 0.50809),
         ) 
+    @classmethod
+    def left_brainco_wrist_camera(cls) -> CameraCfg:
+        """BrainCo left wrist camera. BrainCo has no hand_camera_base_link, so
+        this mounts on left_wrist_yaw_link. pos/rot are a starting estimate
+        (carried over from the Inspire mount) - tune the framing live."""
+        return CameraBaseCfg.get_camera_config(
+            prim_path="/World/envs/env_.*/Robot/left_wrist_yaw_link/left_wrist_camera",
+            height=480, width=640, update_period=0.02, data_types=["rgb"],
+            focal_length=12.0, focus_distance=400.0, horizontal_aperture=20.0,
+            clipping_range=(0.1, 1.0e5),
+            pos_offset=(-0.04012, -0.07441, 0.15711),
+            rot_offset=(0.00539, 0.86024, 0.0424, 0.50809),
+        )
+
+    @classmethod
+    def right_brainco_wrist_camera(cls) -> CameraCfg:
+        """BrainCo right wrist camera (mounted on right_wrist_yaw_link). See
+        left_brainco_wrist_camera - pos/rot are a starting estimate, tune live."""
+        return CameraBaseCfg.get_camera_config(
+            prim_path="/World/envs/env_.*/Robot/right_wrist_yaw_link/right_wrist_camera",
+            height=480, width=640, update_period=0.02, data_types=["rgb"],
+            focal_length=12.0, focus_distance=400.0, horizontal_aperture=20.0,
+            clipping_range=(0.1, 1.0e5),
+            pos_offset=(-0.04012, 0.07441, 0.15711),
+            rot_offset=(0.00539, 0.86024, 0.0424, 0.50809),
+        )

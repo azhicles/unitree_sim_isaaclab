@@ -1285,3 +1285,4 @@ H12_CFG_WITH_INSPIRE_HAND = ArticulationCfg(
 
     },
 )
+
