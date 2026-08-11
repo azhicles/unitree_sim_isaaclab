@@ -39,15 +39,15 @@ import gymnasium as gym  # noqa: E402
 import torch  # noqa: E402
 
 import tasks  # noqa: E402,F401  (registers all tasks)
-from tasks.g1_tasks.server_rack_g1_29dof_inspire.server_rack_g1_29dof_inspire_joint_env_cfg import (  # noqa: E402
-    ServerRackG129InspireHandBaseFixEnvCfg,
+from tasks.g1_tasks.server_rack_g1_29dof_brainco.server_rack_g1_29dof_brainco_joint_env_cfg import (  # noqa: E402
+    ServerRackG129BrainCoHandBaseFixEnvCfg,
 )
 
-TASK = "Isaac-ServerRack-G129-Inspire-Joint"
+TASK = "Isaac-ServerRack-G129-Brainco-Joint"
 
 
 def main():
-    cfg = ServerRackG129InspireHandBaseFixEnvCfg()
+    cfg = ServerRackG129BrainCoHandBaseFixEnvCfg()
     cfg.scene.num_envs = 1
     cfg.sim.device = args.device
     env = gym.make(TASK, cfg=cfg)

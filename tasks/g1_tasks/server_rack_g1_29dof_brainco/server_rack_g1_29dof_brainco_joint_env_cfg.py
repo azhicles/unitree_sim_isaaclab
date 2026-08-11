@@ -104,7 +104,7 @@ class EventCfg:
 
 
 @configclass
-class ServerRackG129InspireHandBaseFixEnvCfg(ManagerBasedRLEnvCfg):
+class ServerRackG129BrainCoHandBaseFixEnvCfg(ManagerBasedRLEnvCfg):
     """Unitree G1 (Inspire, fixed base) server-rack environment."""
 
     scene: ServerRackSceneCfg = ServerRackSceneCfg(

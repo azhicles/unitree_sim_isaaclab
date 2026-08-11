@@ -1,22 +1,16 @@
-# Isaac-ServerRack-G129-Inspire-Joint
+# Isaac-ServerRack-G129-Brainco-Joint
 
 A registered IsaacLab task: a Unitree G1 (29 DoF, **BrainCo** hands, fixed base)
 services a 42U rack holding a Dell R750. Built to mirror
 `pick_place_redblock_g1_29dof_inspire` 1:1 so the framework's **teleoperation /
 replay / data-generation** paths pick it up unchanged.
 
-> **Naming:** the task id / folder still say `Inspire` (from the original build)
-> but the robot is now **BrainCo** (`G129_CFG_WITH_BRAINCO_HAND`, 22 finger DOFs
-> vs Inspire's 24). Rename to a `-Brainco-` id/folder if you want the name to
-> match — say the word and I'll do it (it's a mechanical rename of the package +
-> gym id).
-
-> **BrainCo hand teleop needs a BrainCo DDS.** The arm teleops over `rt/lowcmd`
-> as usual, but there is no BrainCo hand DDS channel in this framework (Inspire/
-> Dex1/Dex3 only). So live finger teleop won't drive the BrainCo hand until a
-> `brainco` DDS object is added (matching the real hand's interface); the hand
-> observation (`get_robot_brainco_joint_states`) already publishes to it if
-> present. Scripted / replay hand control and data recording work today.
+> **BrainCo hand teleop is wired.** Run with `--enable_brainco_dds`: the arm
+> teleops over `rt/lowcmd` and the Revo2 fingers over `rt/brainco/cmd` (12 driven
+> motors; distal joints follow via coupling). See the DDS contract at the top of
+> `dds/brainco_dds.py`. The only remaining piece is the teleop client
+> (`xr_teleoperate`) publishing to `rt/brainco/cmd` — until then the arm
+> teleoperates and the fingers hold their open pose.
 
 **Task** (operator-judged, timeout-only): the bay-4 SSD starts fully seated with
 its clasp closed; the operator drives the G1 to press the release button, draw
@@ -26,8 +20,8 @@ the drive out partway, reinsert it fully, and re-lock the clasp.
 
 | File | Role |
 |---|---|
-| `__init__.py` | `gym.register(id="Isaac-ServerRack-G129-Inspire-Joint", ...)` |
-| `server_rack_g1_29dof_inspire_joint_env_cfg.py` | The `ManagerBasedRLEnvCfg`: scene + actions + observations + (empty) terminations/events + reward + DDS reset events |
+| `__init__.py` | `gym.register(id="Isaac-ServerRack-G129-Brainco-Joint", ...)` |
+| `server_rack_g1_29dof_brainco_joint_env_cfg.py` | The `ManagerBasedRLEnvCfg`: scene + actions + observations + (empty) terminations/events + reward + DDS reset events |
 | `mdp/` | Re-exports of shared `common_observations` / `common_rewards` |
 | `../../common_scene/base_scene_g1_server_rack.py` | Scene base (room + rack + server + SSDs + object + world cam) |
 | `../../common_rewards/base_reward_server_rack.py` | Zero reward (timeout-only task) |
@@ -57,47 +51,46 @@ Installed (done):
   `unitree_sdk2_python`. NB: the SDK pulls numpy>=2 / opencv 5 — both were pinned
   back (`numpy==1.26.0`, `opencv-python==4.10.0.84`) to keep Isaac Sim happy.
 
-Still needed before `sim_main.py --task` works — **`pink` + `pinocchio`**: 8
-sibling cylinder/wholebody tasks `import pink`, and the task registry
-(`tasks/__init__` → `import_packages`) imports **all** tasks and **fails hard**
-on the first missing dep. So discovery is blocked for *every* task, ours
-included, until `pinocchio` (+ `pin-pink`) is installed. (Not specific to this
-task.)
+- **`pin` + `pin-pink`** (`pinocchio`) — 8 sibling cylinder/wholebody tasks
+  `import pink`, and the task registry imports **all** tasks and fails hard on any
+  missing dep, so this is required for `--task` discovery at all (not specific to
+  this task).
+- **BrainCo hand DDS** — built in-repo (`dds/brainco_dds.py`, `--enable_brainco_dds`).
 
 Runtime env every invocation needs: `LD_PRELOAD` for `libgomp`,
 `CYCLONEDDS_HOME` + its `lib` on `LD_LIBRARY_PATH`, `PYTHONPATH=$LAB/isaaclab`,
 `--device cpu` (CPU torch). See the `g1_server_rack` README / repo memory for the
 exact lines.
 
-## Run (once the DDS stack is installed)
+## Run
 
 ```bash
 conda activate unitree_sim_env          # or use its python directly
 # teleoperation (drive from the XR teleop client over DDS)
 python sim_main.py --device cpu --enable_cameras \
-  --task Isaac-ServerRack-G129-Inspire-Joint --enable_inspire_dds --robot_type g129
+  --task Isaac-ServerRack-G129-Brainco-Joint --enable_brainco_dds --robot_type g129
 
 # data replay
 python sim_main.py --device cpu --enable_cameras \
-  --task Isaac-ServerRack-G129-Inspire-Joint --enable_inspire_dds --robot_type g129 \
+  --task Isaac-ServerRack-G129-Brainco-Joint --enable_brainco_dds --robot_type g129 \
   --replay --file_path <recorded_dir>
 
 # data generation (records head+wrist images + joint/action states)
 python sim_main.py --device cpu --enable_cameras \
-  --task Isaac-ServerRack-G129-Inspire-Joint --enable_inspire_dds --robot_type g129 \
+  --task Isaac-ServerRack-G129-Brainco-Joint --enable_brainco_dds --robot_type g129 \
   --replay --file_path <recorded_dir> --generate_data --generate_data_dir ./data_serverrack
 ```
 
 ## Verified on Isaac Sim 5.1
 
 The full scene builds, resets and steps cleanly: all assets spawn (room / rack /
-server / SSDs / robot / object), the **Inspire robot articulation is live (53
+server / SSDs / robot / object), the **BrainCo robot articulation is live (51
 DoF)**, the fixed base is stable, and the **interactive SSD object has its 2 DOFs
-(`button_joint`, `handle_joint`) and stays seated in bay 4** (dz≈0). Verified via
-a DDS-free InteractiveScene build (`tools/` verify scripts); the gym-registration
-+ observation + DDS layer is structurally identical to the verified Inspire
-pick-place task, and its end-to-end `sim_main` run is gated only on the
-`pink`/`pinocchio` install noted above.
+(`button_joint`, `handle_joint`) and stays seated in bay 4** (dz≈0). Also verified
+end-to-end via `gym.make` (discovery → env build → reset with observations → step;
+all 4 cameras, 51 DoF) and the BrainCo DDS command→action mapping (including the
+finger coupling). The full `sim_main` teleop run additionally needs the
+`xr_teleoperate` client publishing to `rt/brainco/cmd`.
 
 ## The interactive SSD "object" (resolved)
 

@@ -3,14 +3,14 @@
 
 import gymnasium as gym
 
-from . import server_rack_g1_29dof_inspire_joint_env_cfg
+from . import server_rack_g1_29dof_brainco_joint_env_cfg
 
 gym.register(
-    id="Isaac-ServerRack-G129-Inspire-Joint",
+    id="Isaac-ServerRack-G129-Brainco-Joint",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     kwargs={
         "env_cfg_entry_point":
-            server_rack_g1_29dof_inspire_joint_env_cfg.ServerRackG129InspireHandBaseFixEnvCfg,
+            server_rack_g1_29dof_brainco_joint_env_cfg.ServerRackG129BrainCoHandBaseFixEnvCfg,
     },
     disable_env_checker=True,
 )
