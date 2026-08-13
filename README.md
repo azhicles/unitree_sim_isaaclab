@@ -23,6 +23,18 @@ Everything below runs in the `unitree_sim_env` conda env (Isaac Sim 5.1 + torch)
 the CycloneDDS + `unitree_sdk2py` stack and IsaacLab 2.3.2 source are already
 installed (see [Environment](#environment)).
 
+> **One-time asset prerequisite — the rack / server / SSD USDs.** These come from
+> the sibling **[`IsaacSIM_URDF`](https://github.com/azhicles/IsaacSIM_URDF)** repo.
+> Clone it next to this repo:
+> ```bash
+> git clone https://github.com/azhicles/IsaacSIM_URDF.git /home/admin/isaac-sim/IsaacSIM_URDF
+> ```
+> The task loads `IsaacSIM_URDF/models/usd_verify/{r750,ssd,rack}` from that default
+> path; if you clone elsewhere, point at it with
+> `export ISAAC_URDF_USD_VERIFY=/your/path/IsaacSIM_URDF/models/usd_verify`.
+> (The interactive SSD, BrainCo robot, and baked office backdrop live in this repo's
+> `assets/` — only the rack/server/SSD source USDs come from `IsaacSIM_URDF`.)
+
 ### 1. Start the simulation (this machine)
 ```bash
 conda activate unitree_sim_env          # or use its python directly
@@ -135,6 +147,7 @@ and [`README_upstream.md`](README_upstream.md) (setup via `auto_setup_env.sh`).
 | BrainCo hand DDS | `dds/brainco_dds.py` | `rt/brainco/{cmd,state}` |
 | Interactive SSD | `assets/objects/ssd_articulated/` | 5.1-native re-import (2 DOFs) via `tools/reimport_ssd_articulated_51.py` |
 | Baked backdrop | `assets/environments/office_server_rack.usd` | from `tools/bake_environment_usd.py --env office` |
+| Rack / server / decor SSD USDs | `IsaacSIM_URDF/models/usd_verify/` **(external repo)** | clone [azhicles/IsaacSIM_URDF](https://github.com/azhicles/IsaacSIM_URDF) — see the asset prerequisite in Quick start |
 
 **4 cameras:** head D435 + left/right wrist (the 3 the recorder saves) + a fixed
 3rd-person world cam.

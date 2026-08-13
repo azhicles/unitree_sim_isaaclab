@@ -119,9 +119,6 @@ temp/
 data.*
 data/
 
-assets/
-assets.*
-assets
 
 ${data}
 *.etli
